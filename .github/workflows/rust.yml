@@ -1,7 +1,7 @@
 # temp/default. Likely to be broken most of the time but I want to play with it
 name: Rust
 
-on: [push]
+on: # [push]
 
 jobs:
   build:
