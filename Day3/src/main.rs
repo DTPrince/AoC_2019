@@ -7,45 +7,44 @@
 use std::env;
 use std::fs;
 use std::io::{Read, Error};
+use crate::manhattan_grid::{Manratty, Instruction};
 
-mod manratty;
+mod manhattan_grid;
 
-
-fn read_csv<R: Read>(io : R, mut csv_vec : Vec<u32>) -> Result<Vec<u32>, Error> {
+fn read_csv<R: Read>(io : R) -> Result<Manratty, Error> {
     let mut csv_rdr = csv::ReaderBuilder::new()
         .has_headers(false)
         .from_reader(io);
 
-    for record in csv_rdr.records() {
+    let mut mr : Manratty = Manratty::default();
 
-        let result = record?;
+    let row : usize = 0;
+    let mut i1 : Vec<Instruction> = vec![Instruction::default()];
+    let mut i2 : Vec<Instruction> = vec![Instruction::default()];
 
-        println!("{:?}", result);
-        for i in 0..result.len() {
-            let direction = result[i].at;
-            let distance = result[i].split_off(1).parse::<u32>().unwrap();
-//            csv_vec.push(result[i].parse::<u32>().unwrap());
+    for result in csv_rdr.records() {
+        let record = result?;
+        // Capture rows in separate instruction vectors
+        for i in 0..record.len() {
+            if row == 0 {
+                i1.push(Instruction::new(record[i].parse().unwrap()));
+            }
+            else {
+                i2.push(Instruction::new(record[i].parse().unwrap()));
+            }
         }
-
     }
-    Ok(csv_vec)
 
-// Going to use this (below) to split int from direction. I hope.
-    //let mut split = "some string 123 ffd".split("123");
-//    for s in split {
-//        println!("{}", s)
-//    }
-//    let vec = split.collect::<Vec<&str>>();
-//// OR
-//    let vec: Vec<&str> = split.collect();
+    mr.store_instructions(&i1, &i2);
+    // okay mister
+    Ok(mr)
 }
 
 fn main() -> Result<(), Error> {
     let args : Vec<String> = env::args().collect();
     let input = &args[1];
 
-    let mut inputs : Vec<u32> = Vec::new();
-    inputs = read_csv(fs::File::open(input)?, inputs)?;
+    let mr = read_csv(fs::File::open(input)?)?;
 
     Ok(())
 }
