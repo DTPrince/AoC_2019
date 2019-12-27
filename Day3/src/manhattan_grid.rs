@@ -93,20 +93,32 @@ impl WireLine {
 }
 
 pub struct Manratty {
-    origin: Vec<u32>,
-    location: Vec<u32>,
-    // {x,y}
-    wire1_instructions: Vec<Instruction>,
-    wire2_instructions: Vec<Instruction>,
+    origin: Coordinate,
+    location: Coordinate,
+
+    wire1_line: Vec<WireLine>,
+    wire2_line: Vec<WireLine>,
 }
 
 impl Manratty {
-    const WIRE1 : bool = true;
-    const WIRE2 : bool = false;
 
-    pub fn store_instructions(&mut self, w1 : &Vec<Instruction>, w2 : &Vec<Instruction>) {
-        self.wire1_instructions = w1.to_vec();
-        self.wire2_instructions = w2.to_vec();
+    pub fn store_instructions(&mut self, w1 : &Vec<WireLine>, w2 : &Vec<WireLine>) {
+        self.wire1_line = w1.to_vec();
+        self.wire2_line = w2.to_vec();
+    }
+
+    //w1 will go out of scope after this
+    pub fn store_raw_instruction_w1(&mut self, mut w1 : WireLine) {
+        w1.set(self.location);
+        self.location = w1.end.copy();
+        self.wire1_line.push(w1);
+    }
+
+    // w2 will go out of scope after this. Probably.
+    pub fn store_raw_instruction_w2(&mut self, mut w2 : WireLine) {
+        w2.set(self.location);
+        self.location = w2.end.copy();
+        self.wire2_line.push(w2);
     }
 
     // The idea here is to move out in a spiral (the kind that proved
@@ -124,18 +136,18 @@ impl Manratty {
 
     pub fn default() -> Manratty {
         Manratty {
-            origin : vec![5000, 5000],
-            location: vec![5000, 5000],
-            wire1_instructions: vec![],
-            wire2_instructions: vec![],
+            origin : Coordinate::default(),
+            location: Coordinate::default(),
+            wire1_line: vec![],
+            wire2_line: vec![],
         }
     }
     pub fn new() -> Manratty {
         Manratty {
-            origin : vec![0,0],
-            location: vec![0,0],
-            wire1_instructions: vec![],
-            wire2_instructions: vec![],
+            origin : Coordinate::default(),
+            location: Coordinate::default(),
+            wire1_line: vec![],
+            wire2_line: vec![],
         }
     }
 }
