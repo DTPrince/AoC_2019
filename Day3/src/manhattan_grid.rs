@@ -23,66 +23,76 @@ impl Instruction {
 }
 
 #[derive(Copy, Clone)]
-pub struct FieldPoint {
-    has_wire1 : bool,
-    has_wire2 : bool,
+pub struct Coordinate {
+    x: u32,
+    y: u32,
 }
 
-impl FieldPoint {
-    pub fn default() -> FieldPoint {
-        FieldPoint {
-            has_wire1: false,
-            has_wire2: false
+impl Coordinate {
+    pub fn default() -> Coordinate {
+        Coordinate {
+            x: 10000,
+            y: 10000
         }
     }
-    pub fn set(&mut self, wire : bool) {
-        if wire {
-            self.has_wire1 = true;
-        }
-        else {
-            self.has_wire2 = true;
-        }
-    }
-    pub fn reset(&mut self, wire: bool) {
-        if wire {
-            self.has_wire1 = false;
-        }
-        else {
-            self.has_wire2 = false;
+
+    pub fn new(ex: u32, why: u32) -> Coordinate {
+        Coordinate {
+            x: ex,
+            y: why
         }
     }
 }
 
-// Manually re-adjusting the indicies to simulate a 10000 x 10000 2d array.
-// x is base, y is offset.
-// For ex: [1][2] = 1*10,000 + 2 = [10,002]
-//         [123][1937] = 123*10,000 + 1937 = [1,231,937]
-pub struct ManrattyField {
-    array : [FieldPoint; 100000000],
+#[derive(Copy, Clone)]
+pub struct WireLine {
+    begin : Coordinate,
+    end : Coordinate,
+    instruction: Instruction,
 }
 
-impl ManrattyField {
-    pub fn default() -> ManrattyField {
-        ManrattyField {
-            array: [FieldPoint::default(); 100000000],
+impl WireLine {
+    pub fn default() -> WireLine {
+        WireLine {
+            begin: Coordinate::default(),
+            end: Coordinate::default(),
+            instruction: Instruction::default(),
         }
     }
 
-    pub fn set(&mut self, pt_x : u32, pt_y : u32, wire: bool) {
-        self.array[((pt_x * 10000) + (pt_y)) as usize].set(wire);
+    pub fn new(inst: Instruction) -> WireLine {
+        WireLine {
+            begin: Coordinate::default(),
+            end: Coordinate::default(),
+            instruction: inst,  //inst.copy() ?
+        }
     }
-    pub fn reset(&mut self, pt_x : u32, pt_y : u32) {
-        self.array[((pt_x * 10000) + (pt_y)) as usize].set(false);
-    }
-    pub fn get(&self, pt_x : u32, pt_y : u32) -> (bool, bool) {
-        // temp
-        (false, false)
+
+    pub fn set(&mut self, b: Coordinate) {
+        self.begin = b;
+        match self.instruction.direction {
+            'U' => {
+                self.end.y = self.begin.y + self.instruction.distance;
+                self.end.x = self.begin.x;
+            },
+            'L' => {
+                self.end.x = self.begin.x - self.instruction.distance;
+                self.end.y = self.begin.y;
+            },
+            'R' => {
+                self.end.x = self.begin.x + self.instruction.distance;
+                self.end.y = self.begin.y;
+            },
+            'D' => {
+                self.end.y = self.begin.y - self.instruction.distance;
+                self.end.x = self.begin.x;
+            },
+            _ => println!("Default condition reached in set WireLine"),
+        }
     }
 }
 
 pub struct Manratty {
-    // Field blob
-    field: ManrattyField,
     origin: Vec<u32>,
     location: Vec<u32>,
     // {x,y}
@@ -97,46 +107,6 @@ impl Manratty {
     pub fn store_instructions(&mut self, w1 : &Vec<Instruction>, w2 : &Vec<Instruction>) {
         self.wire1_instructions = w1.to_vec();
         self.wire2_instructions = w2.to_vec();
-    }
-
-    pub fn plot_wire(&mut self) {
-        /*          +y
-         *          U
-         *  -x  L       R  +x
-         *          D
-         *          -y
-        */
-        for i in self.wire1_instructions {
-            match self.direction {
-                'L' => {
-                    for j in 0..self.distance {
-                        self.field.set(self.location[0] - j, self.location[0], self.WIRE1);
-                    }
-                    self.location[0] = self.origin[0] - self.distance;
-                }
-                'R' => {
-                    for j in 0..self.distance {
-                        self.field.set(self.location[0] + j, self.location[0], self.WIRE1);
-                    }
-                    self.location[0] = self.location[0] + self.distance;
-                }
-                'U' => {
-                    for j in 0..self.distance {
-                        self.field.set(self.location[1] + j, self.location[1], self.WIRE1);
-                    }
-                    self.location[1] = self.location[1] + self.distance;
-                }
-                'D' => {
-                    for j in 0..self.distance {
-                        self.field.set(self.location[1] - j, self.location[1], self.WIRE1);
-                    }
-                    self.location[1] = self.location[1] - self.distance;
-                }
-                _ => {
-                    println!("Now you don' fucked up.");
-                }
-            }
-        }
     }
 
     // The idea here is to move out in a spiral (the kind that proved
@@ -154,7 +124,6 @@ impl Manratty {
 
     pub fn default() -> Manratty {
         Manratty {
-            field : ManrattyField::default(),
             origin : vec![5000, 5000],
             location: vec![5000, 5000],
             wire1_instructions: vec![],
@@ -163,7 +132,6 @@ impl Manratty {
     }
     pub fn new() -> Manratty {
         Manratty {
-            field : ManrattyField::default(),
             origin : vec![0,0],
             location: vec![0,0],
             wire1_instructions: vec![],
