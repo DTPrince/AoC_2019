@@ -7,7 +7,7 @@
 use std::env;
 use std::fs;
 use std::io::{Read, Error};
-use crate::manhattan_grid::{Manratty, Instruction, WireLine};
+use crate::manhattan_grid::{Manratty, Instruction};
 
 mod manhattan_grid;
 
@@ -19,23 +19,23 @@ fn read_csv<R: Read>(io : R) -> Result<Manratty, Error> {
     let mut mr : Manratty = Manratty::default();
 
     let row : usize = 0;
-    let mut i1 : Vec<WireLine> = vec![WireLine::default()];
-    let mut i2 : Vec<WireLine> = vec![WireLine::default()];
+    let mut i1 : Vec<Instruction> = vec![Instruction::default()];
+    let mut i2 : Vec<Instruction> = vec![Instruction::default()];
 
     for result in csv_rdr.records() {
         let record = result?;
         // Capture rows in separate instruction vectors
         for i in 0..record.len() {
             if row == 0 {
-                let wl = WireLine::new(Instruction::new(record[i].parse().unwrap()));
-                mr.store_raw_instruction_w1(wl);
-//                i1.push(wl);
+                let wl = Instruction::new(record[i].parse().unwrap());
+                // println!("Instruction | Direction: {}, Distance: {}", wl.direction, wl.distance);
+                i1.push(wl);
+
             }
             else {
-                let wl = WireLine::new(Instruction::new(record[i].parse().unwrap()));
-                mr.store_raw_instruction_w2(wl);
-
-//                i2.push(WireLine::new(Instruction::new(record[i].parse().unwrap())));
+                let wl = Instruction::new(record[i].parse().unwrap());
+                // println!("Instruction | Direction: {}, Distance: {}", wl.direction, wl.distance);
+                i2.push(wl);
             }
         }
     }
@@ -48,7 +48,11 @@ fn main() -> Result<(), Error> {
     let args : Vec<String> = env::args().collect();
     let input = &args[1];
 
-    let mr = read_csv(fs::File::open(input)?)?;
+    let mut mr = read_csv(fs::File::open(input)?)?;
+    mr.plot_wires();
+    let s = mr.find_intersect();
+    println!("Shortest distance: {}", s[0]+s[1]);
+
 
     Ok(())
 }
