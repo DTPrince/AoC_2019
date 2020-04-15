@@ -61,9 +61,9 @@ pub struct Manratty {
 
 impl Manratty {
 
-    pub fn store_instructions(&mut self, w1 : &Vec<Instruction>, w2 : &Vec<Instruction>) {
-        self.wire1_instructions = w1.to_vec();
-        self.wire2_instructions = w2.to_vec();
+    pub fn store_instructions(&mut self, w1 : Vec<Instruction>, w2 : Vec<Instruction>) {
+        self.wire1_instructions = w1;
+        self.wire2_instructions = w2;
     }
 
     pub fn plot_wires(&mut self) {
@@ -78,9 +78,10 @@ impl Manratty {
             nwire.direction = inst.direction;
             nwire.length = inst.distance;
             nwire.start = self.location1;
+            println!("Nwire1 | Dir: {}, Len: {}, start: <{},{}>", nwire.direction, nwire.length, nwire.start[X], nwire.start[Y]);
 
             let mut end : [i32; 2] = self.location1;
-            match nwire.direction { // U R L D
+            match nwire.direction {
                 'U' => end[Y] = end[Y] + nwire.length,
                 'L' => end[X] = end[X] - nwire.length,
                 'R' => end[X] = end[X] + nwire.length,
@@ -99,6 +100,7 @@ impl Manratty {
             nwire.direction = inst.direction;
             nwire.length = inst.distance;
             nwire.start = self.location2;
+            println!("Nwire2 | Dir: {}, Len: {}, start: <{},{}>", nwire.direction, nwire.length, nwire.start[X], nwire.start[Y]);
 
             let mut end : [i32; 2] = self.location2;
             match nwire.direction { // U R L D
@@ -201,11 +203,15 @@ impl Manratty {
         }
 
         // find closest.
-        let first = intersections.first();
-        let mut smol : [i32; 2] = *first.unwrap();
-        for sect in intersections {
-            if (sect[X] + sect[Y]) < (smol[X] + smol[Y]) {
-                smol = sect;
+        let mut smol : [i32; 2] = [0; 2];
+
+        if !intersections.is_empty() {
+            let first = intersections.first();
+            smol = *first.unwrap();
+            for sect in intersections {
+                if (sect[X] + sect[Y]) < (smol[X] + smol[Y]) {
+                    smol = sect;
+                }
             }
         }
         smol

@@ -18,13 +18,14 @@ fn read_csv<R: Read>(io : R) -> Result<Manratty, Error> {
 
     let mut mr : Manratty = Manratty::default();
 
-    let row : usize = 0;
-    let mut i1 : Vec<Instruction> = vec![Instruction::default()];
-    let mut i2 : Vec<Instruction> = vec![Instruction::default()];
+    let mut row : usize = 0;
+    let mut i1 : Vec<Instruction> = vec![];
+    let mut i2 : Vec<Instruction> = vec![];
 
     for result in csv_rdr.records() {
         let record = result?;
         // Capture rows in separate instruction vectors
+        // println!("Record len: {}", record.len());
         for i in 0..record.len() {
             if row == 0 {
                 let wl = Instruction::new(record[i].parse().unwrap());
@@ -38,8 +39,9 @@ fn read_csv<R: Read>(io : R) -> Result<Manratty, Error> {
                 i2.push(wl);
             }
         }
+        row = row + 1;
     }
-    mr.store_instructions(&i1, &i2);
+    mr.store_instructions(i1, i2);
     // okay mister
     Ok(mr)
 }
