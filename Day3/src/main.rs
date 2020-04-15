@@ -34,7 +34,6 @@ fn read_csv<R: Read>(io : R) -> Result<Manratty, Error> {
             }
         }
     }
-
     mr.store_instructions(&i1, &i2);
     // okay mister
     Ok(mr)

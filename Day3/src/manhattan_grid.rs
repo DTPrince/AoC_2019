@@ -1,9 +1,7 @@
-use std::thread::current;
-
 #[derive(Copy, Clone)]
 pub struct Instruction {
     direction : char,
-    distance : u32,
+    distance : i32,
 }
 
 impl Instruction {
@@ -17,157 +15,125 @@ impl Instruction {
         let (dir, dist) = s.split_at(1);
         Instruction {
             direction : dir.chars().next().unwrap(),
-            distance : dist.parse::<u32>().unwrap()
+            distance : dist.parse::<i32>().unwrap()
         }
     }
 }
 
 #[derive(Copy, Clone)]
-pub struct FieldPoint {
-    has_wire1 : bool,
-    has_wire2 : bool,
+pub struct Wire {
+    direction : char,
+    length : i32,
+    start : [i32; 2],
+    end : [i32; 2],      // Might as well.
 }
 
-impl FieldPoint {
-    pub fn default() -> FieldPoint {
-        FieldPoint {
-            has_wire1: false,
-            has_wire2: false
-        }
-    }
-    pub fn set(&mut self, wire : bool) {
-        if wire {
-            self.has_wire1 = true;
-        }
-        else {
-            self.has_wire2 = true;
-        }
-    }
-    pub fn reset(&mut self, wire: bool) {
-        if wire {
-            self.has_wire1 = false;
-        }
-        else {
-            self.has_wire2 = false;
-        }
-    }
-}
-
-// Manually re-adjusting the indicies to simulate a 10000 x 10000 2d array.
-// x is base, y is offset.
-// For ex: [1][2] = 1*10,000 + 2 = [10,002]
-//         [123][1937] = 123*10,000 + 1937 = [1,231,937]
-pub struct ManrattyField {
-    array : [FieldPoint; 100000000],
-}
-
-impl ManrattyField {
-    pub fn default() -> ManrattyField {
-        ManrattyField {
-            array: [FieldPoint::default(); 100000000],
+impl Wire {
+    pub fn default() -> Wire {
+        Wire {
+            direction : '0',
+            length : 0,
+            start : [0; 2],
+            end: [0; 2],
         }
     }
 
-    pub fn set(&mut self, pt_x : u32, pt_y : u32, wire: bool) {
-        self.array[((pt_x * 10000) + (pt_y)) as usize].set(wire);
-    }
-    pub fn reset(&mut self, pt_x : u32, pt_y : u32) {
-        self.array[((pt_x * 10000) + (pt_y)) as usize].set(false);
-    }
-    pub fn get(&self, pt_x : u32, pt_y : u32) -> (bool, bool) {
-        // temp
-        (false, false)
+    pub fn new(dir : char, len : i32, st : [i32; 2], en : [i32; 2]) -> Wire {
+        Wire {
+            direction : dir,
+            length : len,
+            start : st,
+            end : en,
+        }
     }
 }
 
 pub struct Manratty {
-    // Field blob
-    field: ManrattyField,
-    origin: Vec<u32>,
-    location: Vec<u32>,
+    location1: [i32; 2],
+    location2: [i32; 2],
     // {x,y}
     wire1_instructions: Vec<Instruction>,
     wire2_instructions: Vec<Instruction>,
+
+    wires1: Vec<Wire>,
+    wires2: Vec<Wire>,
 }
 
 impl Manratty {
-    const WIRE1 : bool = true;
-    const WIRE2 : bool = false;
 
     pub fn store_instructions(&mut self, w1 : &Vec<Instruction>, w2 : &Vec<Instruction>) {
         self.wire1_instructions = w1.to_vec();
         self.wire2_instructions = w2.to_vec();
     }
 
-    pub fn plot_wire(&mut self) {
-        /*          +y
-         *          U
-         *  -x  L       R  +x
-         *          D
-         *          -y
-        */
-        for i in self.wire1_instructions {
-            match self.direction {
-                'L' => {
-                    for j in 0..self.distance {
-                        self.field.set(self.location[0] - j, self.location[0], self.WIRE1);
-                    }
-                    self.location[0] = self.origin[0] - self.distance;
-                }
-                'R' => {
-                    for j in 0..self.distance {
-                        self.field.set(self.location[0] + j, self.location[0], self.WIRE1);
-                    }
-                    self.location[0] = self.location[0] + self.distance;
-                }
-                'U' => {
-                    for j in 0..self.distance {
-                        self.field.set(self.location[1] + j, self.location[1], self.WIRE1);
-                    }
-                    self.location[1] = self.location[1] + self.distance;
-                }
-                'D' => {
-                    for j in 0..self.distance {
-                        self.field.set(self.location[1] - j, self.location[1], self.WIRE1);
-                    }
-                    self.location[1] = self.location[1] - self.distance;
-                }
-                _ => {
-                    println!("Now you don' fucked up.");
-                }
+    pub fn plot_wires(&mut self) {
+        const X: usize = 0;
+        const Y: usize = 1;
+
+        self.location1 = [0; 2];
+        self.location2 = [0; 2];
+
+        for inst in self.wire1_instructions.iter() {
+            let mut nwire : Wire = Wire::default();
+            nwire.direction = inst.direction;
+            nwire.length = inst.distance;
+            nwire.start = self.location1;
+
+            let mut end : [i32; 2] = self.location1;
+            match nwire.direction { // U R L D
+                'U' => end[Y] = end[Y] + nwire.length,
+                'L' => end[X] = end[X] - nwire.length,
+                'R' => end[X] = end[X] + nwire.length,
+                'D' => end[Y] = end[Y] - nwire.length,
+                _ => {println!("Invalid direction caught")} // TODO: add proper catch here
             }
+            nwire.end = end;
+            self.wires1.push(nwire);
+
+            //update location
+            self.location1 = end;
         }
-    }
 
-    // The idea here is to move out in a spiral (the kind that proved
-    // countable infinity as well as dope-ass Ulam-spiral) in an attempt
-    // to find the closest cross-over early. I'm going to try to do the
-    // lazy thing and assume there exists only one correct answer and
-    // go back to accumulate results in the end if required.
-    pub fn find_origin_closest(&self) {
-        // copy so we do not fuck over our origin by taking ownership
-        let mut current = self.origin.to_vec();
-        for i in (self.origin[0]+1)..10000000 {
+        for inst in self.wire2_instructions.iter() {
+            let mut nwire : Wire = Wire::default();
+            nwire.direction = inst.direction;
+            nwire.length = inst.distance;
+            nwire.start = self.location2;
 
+            let mut end : [i32; 2] = self.location2;
+            match nwire.direction { // U R L D
+                'U' => end[Y] = end[Y] + nwire.length,
+                'L' => end[X] = end[X] - nwire.length,
+                'R' => end[X] = end[X] + nwire.length,
+                'D' => end[Y] = end[Y] - nwire.length,
+                _ => {println!("Invalid direction caught")} // TODO: add proper catch here
+            }
+            nwire.end = end;
+            self.wires2.push(nwire);
+
+            //update location
+            self.location2 = end;
         }
     }
 
     pub fn default() -> Manratty {
         Manratty {
-            field : ManrattyField::default(),
-            origin : vec![5000, 5000],
-            location: vec![5000, 5000],
+            location1: [0; 2],
+            location2: [0; 2],
             wire1_instructions: vec![],
             wire2_instructions: vec![],
+            wires1: vec![],
+            wires2: vec![]
         }
     }
     pub fn new() -> Manratty {
         Manratty {
-            field : ManrattyField::default(),
-            origin : vec![0,0],
-            location: vec![0,0],
+            location1: [0; 2],
+            location2: [0; 2],
             wire1_instructions: vec![],
             wire2_instructions: vec![],
+            wires1: vec![],
+            wires2: vec![]
         }
     }
 }
