@@ -7,7 +7,7 @@
 use std::env;
 use std::fs;
 use std::io::{Read, Error};
-use crate::manhattan_grid::{Manratty, Instruction};
+use crate::manhattan_grid::{Manratty, Instruction, WireLine};
 
 mod manhattan_grid;
 
@@ -19,18 +19,23 @@ fn read_csv<R: Read>(io : R) -> Result<Manratty, Error> {
     let mut mr : Manratty = Manratty::default();
 
     let row : usize = 0;
-    let mut i1 : Vec<Instruction> = vec![Instruction::default()];
-    let mut i2 : Vec<Instruction> = vec![Instruction::default()];
+    let mut i1 : Vec<WireLine> = vec![WireLine::default()];
+    let mut i2 : Vec<WireLine> = vec![WireLine::default()];
 
     for result in csv_rdr.records() {
         let record = result?;
         // Capture rows in separate instruction vectors
         for i in 0..record.len() {
             if row == 0 {
-                i1.push(Instruction::new(record[i].parse().unwrap()));
+                let wl = WireLine::new(Instruction::new(record[i].parse().unwrap()));
+                mr.store_raw_instruction_w1(wl);
+//                i1.push(wl);
             }
             else {
-                i2.push(Instruction::new(record[i].parse().unwrap()));
+                let wl = WireLine::new(Instruction::new(record[i].parse().unwrap()));
+                mr.store_raw_instruction_w2(wl);
+
+//                i2.push(WireLine::new(Instruction::new(record[i].parse().unwrap())));
             }
         }
     }

@@ -61,9 +61,9 @@ pub struct Manratty {
 
 impl Manratty {
 
-    pub fn store_instructions(&mut self, w1 : &Vec<Instruction>, w2 : &Vec<Instruction>) {
-        self.wire1_instructions = w1.to_vec();
-        self.wire2_instructions = w2.to_vec();
+    pub fn store_instructions(&mut self, w1 : &Vec<WireLine>, w2 : &Vec<WireLine>) {
+        self.wire1_line = w1.to_vec();
+        self.wire2_line = w2.to_vec();
     }
 
     pub fn plot_wires(&mut self) {
