@@ -209,7 +209,9 @@ impl Manratty {
             let first = intersections.first();
             smol = *first.unwrap();
             for sect in intersections {
-                if (sect[X] + sect[Y]) < (smol[X] + smol[Y]) {
+                // The checker is finding the intersection at the port. Second condition removes to 0.
+                if (sect[X].abs() + sect[Y].abs()) < (smol[X].abs() + smol[Y].abs()) ||
+                    ((smol[X] == smol[Y]) && (smol[X] == 0)) {
                     smol = sect;
                 }
             }

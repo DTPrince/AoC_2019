@@ -53,7 +53,8 @@ fn main() -> Result<(), Error> {
     let mut mr = read_csv(fs::File::open(input)?)?;
     mr.plot_wires();
     let s = mr.find_intersect();
-    println!("Shortest distance: {}", s[0]+s[1]);
+    let dist = s[0].abs() + s[1].abs();
+    println!("Shortest distance: {}", dist);
 
 
     Ok(())
