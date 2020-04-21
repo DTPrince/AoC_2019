@@ -26,6 +26,8 @@ pub struct Wire {
     length : i32,
     start : [i32; 2],
     end : [i32; 2],      // Might as well.
+    steps_start: i32,
+    steps_end: i32,
 }
 
 impl Wire {
@@ -35,6 +37,8 @@ impl Wire {
             length : 0,
             start : [0; 2],
             end: [0; 2],
+            steps_start: i32::max_value(),
+            steps_end: i32::max_value(),
         }
     }
 
@@ -44,6 +48,8 @@ impl Wire {
             length : len,
             start : st,
             end : en,
+            steps_start: i32::max_value(),
+            steps_end: i32::max_value(),
         }
     }
 }
@@ -73,6 +79,7 @@ impl Manratty {
         self.location1 = [0; 2];
         self.location2 = [0; 2];
 
+        let mut steps1: i32 = 0;
         for inst in self.wire1_instructions.iter() {
             let mut nwire : Wire = Wire::default();
             nwire.direction = inst.direction;
@@ -81,6 +88,7 @@ impl Manratty {
             println!("Nwire1 | Dir: {}, Len: {}, start: <{},{}>", nwire.direction, nwire.length, nwire.start[X], nwire.start[Y]);
 
             let mut end : [i32; 2] = self.location1;
+
             match nwire.direction {
                 'U' => end[Y] = end[Y] + nwire.length,
                 'L' => end[X] = end[X] - nwire.length,
@@ -89,12 +97,18 @@ impl Manratty {
                 _ => {println!("Invalid direction caught. Direction: {}", nwire.direction)} // TODO: add proper catch here
             }
             nwire.end = end;
+
+            nwire.steps_start = steps1;
+            steps1 = steps1 + nwire.length;
+            nwire.steps_end = steps1;
+
             self.wires1.push(nwire);
 
             //update location
             self.location1 = end;
         }
 
+        let mut steps2: i32 = 0;
         for inst in self.wire2_instructions.iter() {
             let mut nwire : Wire = Wire::default();
             nwire.direction = inst.direction;
@@ -111,6 +125,11 @@ impl Manratty {
                 _ => {println!("Invalid direction caught. Direction: {}", nwire.direction)} // TODO: add proper catch here
             }
             nwire.end = end;
+
+            nwire.steps_start = steps2;
+            steps2 = steps2 + nwire.length;
+            nwire.steps_end = steps2;
+
             self.wires2.push(nwire);
 
             //update location
@@ -138,9 +157,11 @@ impl Manratty {
         mdist
     }
 
-    pub fn find_intersect(&self) -> [i32; 2] {
+    pub fn find_closest_intersect(&self) -> [i32; 2] {
         const X: usize = 0;
         const Y: usize = 1;
+        const X_STEPS: usize = 2;
+        const Y_STEPS: usize = 3;
         // As this is just constructed as a series of line segments with no edges
         // the plan is just to iterate through the segments in a O(n^2) order and
         // check for proximity/intersects.
@@ -151,6 +172,9 @@ impl Manratty {
 
         // store intersects
         let mut intersections : Vec<[i32; 2]> = vec![];
+        // TODO: Expand this to include intersection distances.
+        // TODO: cont. - should just move to internal stuct and
+        // TODO: cont. - implement in other fn
 
         for wire1 in &self.wires1 {
             for wire2 in &self.wires2 {
