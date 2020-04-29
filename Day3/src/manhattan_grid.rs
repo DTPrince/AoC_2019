@@ -54,6 +54,40 @@ impl Wire {
     }
 }
 
+#[derive(Copy, Clone)]
+pub struct Intersections {
+    x : i32,
+    y : i32,
+    w1_distance : i32,
+    w2_distance : i32,
+    total_distance : i32,
+}
+
+impl Intersections {
+    pub fn default() -> Intersections {
+        Intersections {
+            x: -1,
+            y: -1,
+            w1_distance: -1,
+            w2_distance: -1,
+            total_distance: -1
+        }
+    }
+
+    // Trying new constructor naming.
+    pub fn new(_x : i32, _y : i32, _w1_distance : i32, _w2_distance : i32) -> Intersections {
+        Intersections {
+            x: _x,
+            y: _y,
+            // Distance is always required to be positive
+            w1_distance: _w1_distance,
+            w2_distance: _w2_distance,
+            total_distance: _w1_distance + _w2_distance
+        }
+    }
+
+}
+
 pub struct Manratty {
     location1: [i32; 2],
     location2: [i32; 2],
@@ -63,6 +97,8 @@ pub struct Manratty {
 
     wires1: Vec<Wire>,
     wires2: Vec<Wire>,
+
+    intersections: Vec<Intersctions>,
 }
 
 impl Manratty {
